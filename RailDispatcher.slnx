@@ -1,1 +1,28 @@
-<Solution />
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/VISION.md" />
+    <File Path="docs/RAILWAY.md" />
+    <File Path="docs/TRAIN_SYSTEM.md" />
+    <File Path="docs/SCHEDULES.md" />
+    <File Path="docs/PASSENGERS.md" />
+    <File Path="docs/MAP.md" />
+    <File Path="docs/UI.md" />
+    <File Path="docs/ARCHITECTURE.md" />
+    <File Path="docs/DATA_MODEL.md" />
+    <File Path="docs/TECHNICAL.md" />
+    <File Path="docs/DEVELOPMENT.md" />
+    <File Path="docs/ROADMAP.md" />
+  </Folder>
+  <File Path="CHANGELOG.md" />
+  <File Path="CONTRIBUTING.md" />
+  <Folder Name="/src/">
+    <Project Path="src/RailDispatch.App/RailDispatch.App.csproj" />
+    <Project Path="src/RailDispatch.Domain/RailDispatch.Domain.csproj" />
+    <Project Path="src/RailDispatch.Infrastructure/RailDispatch.Infrastructure.csproj" />
+    <Project Path="src/RailDispatch.Simulation/RailDispatch.Simulation.csproj" />
+    <Project Path="src/RailDispatch.UI/RailDispatch.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RailDispatch.Tests/RailDispatch.Tests.csproj" />
+  </Folder>
+</Solution>
