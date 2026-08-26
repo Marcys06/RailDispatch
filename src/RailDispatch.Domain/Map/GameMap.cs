@@ -2,7 +2,7 @@
 
 public sealed class GameMap
 {
-    private readonly MapCell[] _cells;
+    private readonly TerrainType[] _terrain;
 
     public MapSize Size { get; }
 
@@ -14,21 +14,24 @@ public sealed class GameMap
     public GameMap(MapSize size)
     {
         Size = size;
-        _cells = new MapCell[size.Width * size.Height];
-
-        for (var i = 0; i < _cells.Length; i++)
-            _cells[i] = new MapCell();
+        _terrain = new TerrainType[checked(size.Width * size.Height)];
     }
 
-    public MapCell GetCell(MapPosition position)
+    public TerrainType GetTerrain(MapPosition position)
     {
         ValidatePosition(position);
-        return _cells[position.Y * Size.Width + position.X];
+        return _terrain[GetIndex(position)];
     }
 
     public void SetTerrain(MapPosition position, TerrainType terrain)
     {
-        GetCell(position).Terrain = terrain;
+        ValidatePosition(position);
+        _terrain[GetIndex(position)] = terrain;
+    }
+
+    private int GetIndex(MapPosition position)
+    {
+        return checked(position.Y * Size.Width + position.X);
     }
 
     private void ValidatePosition(MapPosition position)
