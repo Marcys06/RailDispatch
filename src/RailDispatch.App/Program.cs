@@ -1,1 +1,4 @@
-﻿Console.WriteLine("Hello, World!");
+﻿using RailDispatch.App;
+
+ApplicationConfiguration.Initialize();
+Application.Run(new MainForm());
