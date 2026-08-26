@@ -1,49 +1,71 @@
-﻿# RAILWAY
+﻿@'
+# RailDispatch — Data Model
 
-## Cel
+## 1. Cel dokumentu
 
-System kolejowy odpowiada za budowę i działanie infrastruktury kolejowej.
+Dokument definiuje model danych gry RailDispatch.
 
-## Tory
+Model danych opisuje obiekty świata gry, ich właściwości, relacje oraz zasady przechowywania danych.
 
-Tory są budowane ręcznie przez użytkownika, kratka po kratce.
+Model został zaprojektowany z myślą o:
+- symulacji ruchu kolejowego,
+- planowaniu ruchu,
+- budowie infrastruktury,
+- tworzeniu usług i rozkładów,
+- obsłudze pasażerów,
+- późniejszym dodaniu przewozu towarów,
+- zapisie i odczycie stanu gry,
+- dalszej rozbudowie bez konieczności przebudowy podstawowych struktur.
 
-Sieć może składać się z jednego lub dwóch niezależnych torów.
+---
 
-Pociągi mogą poruszać się w obu kierunkach.
+## 2. Zasady modelu
 
-Dwa niezależne tory umożliwiają mijanie i wyprzedzanie pociągów.
+RailDispatch rozdziela dane infrastruktury, taboru, planowania oraz aktualnego stanu symulacji.
 
-## Rozjazdy
+Obiekt świata powinien posiadać stabilny identyfikator.
 
-Rozjazdy umożliwiają zmianę przebiegu pociągu.
+Identyfikatory powinny umożliwiać jednoznaczne odwoływanie się do obiektów podczas symulacji oraz zapisu gry.
 
-Stan rozjazdu jest kontrolowany przez system interlockingu.
+Dane konfiguracyjne powinny być oddzielone od danych chwilowego stanu symulacji.
 
-## Semafory
+Parametry, które obecnie są stałe dla wszystkich obiektów, powinny być modelowane jako parametry możliwe do późniejszej indywidualizacji.
 
-Semafory są ręcznie umieszczane przez użytkownika.
+Model nie powinien zakładać, że pociąg jest pojedynczym obiektem fizycznym.
 
-System automatycznie wyznacza sekcje chronione przez semafory.
+---
 
-Stan semafora zależy od zajętości sekcji oraz ustawionego przebiegu.
+# 3. Główne grupy danych
 
-## Interlocking
+Model danych obejmuje następujące grupy:
 
-Interlocking zapobiega ustawieniu sprzecznych przebiegów.
-
-System nie pozwala na jednoczesne wykorzystanie kolizyjnych tras.
-
-## Trasy
-
-Użytkownik wybiera całą trasę pociągu.
-
-System automatycznie analizuje możliwość przejazdu.
-
-System pokazuje użytkownikowi wynik analizy zamiast samodzielnie zmieniać zaplanowaną trasę.
-
-## Wyprzedzanie
-
-Wyprzedzanie jest możliwe przy odpowiedniej konfiguracji infrastruktury.
-
-System wykorzystuje dostępne tory i przebiegi zgodnie z planem ruchu.
+```text
+Game
+├── Map
+│   ├── Terrain
+│   ├── Track
+│   ├── Junction
+│   ├── Station
+│   └── Signal
+│
+├── Rolling Stock
+│   ├── Locomotive
+│   ├── PassengerCar
+│   ├── FreightCar
+│   └── Train
+│
+├── Operations
+│   ├── Route
+│   ├── Service
+│   ├── Timetable
+│   ├── Stop
+│   └── Priority
+│
+├── Passengers
+│   ├── PassengerDemand
+│   └── PassengerFlow
+│
+└── Simulation
+    ├── SimulationState
+    ├── SimulationTime
+    └── TrainState
