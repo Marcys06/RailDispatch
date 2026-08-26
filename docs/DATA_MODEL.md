@@ -1,525 +1,402 @@
-﻿
-````markdown
-# RailDispatch — Data Model
+﻿# RailDispatch — Data Model
 
 ## 1. Cel dokumentu
 
 Dokument definiuje model danych gry RailDispatch.
 
-Model danych opisuje:
+Model danych opisuje obiekty świata gry, ich właściwości, relacje oraz zasady przechowywania danych.
 
-- mapę,
-- teren,
-- infrastrukturę kolejową,
-- tory,
-- rozjazdy,
-- sekcje torowe,
-- semafory,
-- stacje,
-- perony,
-- trasy,
-- usługi,
-- rozkłady jazdy,
-- tabor,
-- pociągi,
-- pasażerów,
-- zapotrzebowanie pasażerskie,
-- stan symulacji.
-
-Model powinien być niezależny od interfejsu użytkownika.
-
-Model powinien umożliwiać późniejszą rozbudowę o przewozy towarowe bez przebudowy podstawowej architektury pociągów.
+Model został zaprojektowany z myślą o:
+- symulacji ruchu kolejowego,
+- planowaniu ruchu,
+- budowie infrastruktury,
+- tworzeniu usług i rozkładów,
+- obsłudze pasażerów,
+- późniejszym dodaniu przewozu towarów,
+- zapisie i odczycie stanu gry,
+- dalszej rozbudowie bez konieczności przebudowy podstawowych struktur.
 
 ---
 
-# 2. Zasady modelu
+## 2. Zasady modelu
 
-## 2.1. Identyfikatory
+RailDispatch rozdziela dane infrastruktury, taboru, planowania oraz aktualnego stanu symulacji.
 
-Każdy trwały obiekt świata gry powinien posiadać unikalny identyfikator.
+Obiekt świata powinien posiadać stabilny identyfikator.
 
-Przykładowo:
+Identyfikatory powinny umożliwiać jednoznaczne odwoływanie się do obiektów podczas symulacji oraz zapisu gry.
+
+Dane konfiguracyjne powinny być oddzielone od danych chwilowego stanu symulacji.
+
+Parametry, które obecnie są stałe dla wszystkich obiektów, powinny być modelowane jako parametry możliwe do późniejszej indywidualizacji.
+
+Model nie powinien zakładać, że pociąg jest pojedynczym obiektem fizycznym.
+
+---
+
+# 3. Główne grupy danych
+
+Model danych obejmuje następujące grupy:
 
 ```text
-MapId
-TrackId
-SwitchId
-SignalId
-SectionId
-StationId
-PlatformId
-RouteId
-ServiceId
-ScheduleId
-TrainId
-RollingStockId
-PassengerDemandId
+Game
+├── Map
+│   ├── Terrain
+│   ├── Track
+│   ├── Junction
+│   ├── Station
+│   └── Signal
+│
+├── Rolling Stock
+│   ├── Locomotive
+│   ├── PassengerCar
+│   ├── FreightCar
+│   └── Train
+│
+├── Operations
+│   ├── Route
+│   ├── Service
+│   ├── Timetable
+│   ├── Stop
+│   └── Priority
+│
+├── Passengers
+│   ├── PassengerDemand
+│   └── PassengerFlow
+│
+└── Simulation
+    ├── SimulationState
+    ├── SimulationTime
+    └── TrainState
 ````
 
-Identyfikatory nie powinny zależeć od pozycji obiektu na mapie.
+---
+
+# 4. Game
+
+`Game` reprezentuje cały stan rozgrywki.
+
+### Przykładowe dane
+
+```text
+Game
+├── Id
+├── Name
+├── Version
+├── Map
+├── Infrastructure
+├── RollingStock
+├── Routes
+├── Services
+├── Timetables
+├── PassengerSystem
+└── SimulationState
+```
+
+`Game` powinien umożliwiać zapis kompletnego stanu rozgrywki.
 
 ---
 
-## 2.2. Jednostki
+# 5. Map
 
-Podstawową jednostką przestrzeni jest jedna kratka mapy.
+Mapa reprezentuje przestrzeń świata gry.
 
-```text
-1 tile = 1 jednostka przestrzeni
-```
-
-Maksymalny rozmiar mapy:
+Maksymalny rozmiar mapy wynosi:
 
 ```text
 16384 × 16384
 ```
 
-Mapa może być mniejsza.
+Jedna kratka mapy reprezentuje jedną jednostkę przestrzeni.
 
-Prędkość powinna być przechowywana w jednostce jednoznacznej dla silnika symulacji.
+Mapa może być mniejsza od maksymalnego rozmiaru.
 
-Masa powinna być przechowywana w kilogramach lub tonach, przy czym wybór jednostki musi być jednolity w całym projekcie.
+Mapa jest początkowo pusta.
 
-Czas symulacji powinien być reprezentowany w sposób umożliwiający dokładne obliczenia.
+Mapa zawiera teren.
 
----
-
-# 3. Map
-
-`Map` reprezentuje cały świat gry.
-
-Mapa składa się z:
-
-```text
-Map
-├── Terrain
-├── RailwayInfrastructure
-├── Stations
-├── Signals
-├── Trains
-└── SimulationState
-```
-
-Podstawowe właściwości:
-
-```text
-Id
-Width
-Height
-Terrain
-Infrastructure
-```
-
-`Width` oraz `Height` określają rzeczywisty rozmiar mapy.
-
-Maksymalna wartość obu parametrów wynosi:
-
-```text
-16384
-```
+Mapa nie zawiera wody.
 
 ---
 
-# 4. Terrain
+# 6. Terrain
 
 `Terrain` reprezentuje teren znajdujący się pod infrastrukturą.
 
-Beta nie wymaga rozbudowanego systemu terenu.
+Model terenu powinien pozwalać na późniejsze rozszerzenie parametrów.
 
-Model powinien jednak przewidywać:
-
-```text
-TerrainType
-Elevation
-```
-
-oraz możliwość późniejszego dodania:
+Minimalny model może zawierać:
 
 ```text
-Slope
-SurfaceType
+TerrainCell
+├── X
+├── Y
+└── Height
 ```
 
-Mapa beta nie posiada zbiorników wodnych.
+Wysokość terenu jest parametrem umożliwiającym późniejsze uwzględnienie nachyleń.
 
 ---
 
-# 5. RailwayInfrastructure
+# 7. Track
 
-`RailwayInfrastructure` przechowuje elementy infrastruktury kolejowej.
+`Track` reprezentuje fizyczny odcinek toru.
 
-Główne elementy:
+Tor jest budowany kratka po kratce.
+
+### Podstawowe dane
 
 ```text
-Tracks
-Switches
-Signals
-Sections
-Stations
-Platforms
+Track
+├── Id
+├── Start
+├── End
+├── Direction
+├── Electrification
+├── VoltageType
+├── MaximumSpeed
+├── Length
+├── SectionId
+└── JunctionConnections
 ```
 
-Infrastruktura jest częścią mapy.
+`Length` jest wyliczana na podstawie geometrii toru.
 
-Infrastruktura nie powinna przechowywać stanu pociągu.
+`MaximumSpeed` określa maksymalną dozwoloną prędkość na danym odcinku.
 
 ---
 
-# 6. Track
-
-`Track` reprezentuje odcinek toru.
-
-Tor może składać się z wielu kolejnych elementów przestrzennych.
-
-Podstawowe dane:
-
-```text
-TrackId
-Start
-End
-Length
-Geometry
-Direction
-TrackType
-SectionId
-```
+# 8. Track direction
 
 Tor może być:
 
-* jednokierunkowy,
-* dwukierunkowy.
+```text
+OneWay
+TwoWay
+```
 
-Docelowo użytkownik może budować dwa niezależne tory równolegle.
+Tor dwukierunkowy pozwala na jazdę w obu kierunkach.
 
-Dwa równoległe tory pozostają niezależnymi elementami infrastruktury.
+Tor jednokierunkowy ogranicza dozwolony kierunek ruchu.
+
+Kierunek aktualnego ruchu pociągu jest stanem symulacji, a nie właściwością samego toru.
 
 ---
 
-# 7. TrackGeometry
+# 9. Electrification
 
-`TrackGeometry` opisuje fizyczny przebieg toru na mapie.
+Infrastruktura kolejowa obsługuje elektryfikację.
 
-Geometria jest budowana kratka po kratce.
-
-Przykładowo:
+Minimalny model:
 
 ```text
-(10,10)
-(11,10)
-(12,10)
-(13,11)
-(14,12)
+ElectrificationType
+├── None
+├── DC
+└── AC
 ```
 
-Geometria powinna umożliwiać:
+Dokładne napięcia mogą zostać dodane w przyszłości.
 
-* obliczenie długości,
-* określenie pozycji pociągu,
-* określenie kierunku,
-* wykrywanie zajęcia toru,
-* wyznaczanie kolejnych elementów trasy.
+Typ elektryfikacji powinien być niezależny od typu pojazdu.
 
 ---
 
-# 8. Switch
+# 10. Junction
 
-`Switch` reprezentuje rozjazd.
+`Junction` reprezentuje rozjazd lub połączenie torów.
 
-Rozjazd posiada:
+Rozjazd może posiadać wiele możliwych ustawień.
 
 ```text
-SwitchId
-Position
-IncomingTrack
-OutgoingTracks
-CurrentPosition
-Locked
+Junction
+├── Id
+├── ConnectedTracks
+├── CurrentPosition
+└── AvailablePositions
 ```
 
-Rozjazd może posiadać więcej niż jeden możliwy przebieg.
+Aktualna pozycja rozjazdu jest stanem infrastruktury.
 
-Rozjazd jest sterowany przez system interlockingu.
-
-Rozjazd nie może zostać przestawiony, jeżeli jego stan jest zablokowany dla aktywnego przebiegu.
+Rozjazd może być sterowany przez system interlockingu.
 
 ---
 
-# 9. Signal
-
-`Signal` reprezentuje semafor.
-
-Semafor posiada:
-
-```text
-SignalId
-Position
-Direction
-ProtectedSection
-Aspect
-```
-
-Semafor może kontrolować dostęp do kolejnego odcinka lub przebiegu.
-
-Semafory są elementami infrastruktury.
-
-Semafory nie wyznaczają samodzielnie całej trasy pociągu.
-
----
-
-# 10. BlockSection
-
-`BlockSection` reprezentuje sekcję torową używaną przez system zabezpieczenia ruchu.
-
-Sekcje są automatycznie wyznaczane na podstawie infrastruktury i rozmieszczenia semaforów.
-
-Sekcja posiada:
-
-```text
-SectionId
-Tracks
-Occupied
-Reserved
-ReservedByTrainId
-```
-
-Stan sekcji może być:
-
-```text
-Free
-Reserved
-Occupied
-```
-
-System może rozszerzyć ten model o dodatkowe stany w przyszłości.
-
----
-
-# 11. Interlocking
-
-`Interlocking` nie jest pojedynczym obiektem infrastruktury, lecz systemem zarządzającym zależnościami pomiędzy:
-
-```text
-Signals
-Switches
-Sections
-Routes
-Trains
-```
-
-System interlockingu zapewnia, że konfliktowe przebiegi nie zostaną jednocześnie ustawione.
-
-Interlocking powinien blokować:
-
-* zajęte sekcje,
-* zarezerwowane sekcje,
-* konfliktowe rozjazdy,
-* konfliktowe przebiegi.
-
----
-
-# 12. Station
+# 11. Station
 
 `Station` reprezentuje stację kolejową.
 
-Stacja posiada:
+Stacja może posiadać wiele torów oraz peronów.
 
 ```text
-StationId
-Name
-Position
-Platforms
-```
-
-Stacja może posiadać wiele peronów.
-
-Stacja jest miejscem obsługi pasażerów.
-
-Pociąg zatrzymujący się na stacji musi posiadać odpowiedni punkt postoju w swoim rozkładzie.
-
----
-
-# 13. Platform
-
-`Platform` reprezentuje peron lub miejsce obsługi pociągu.
-
-Peron posiada:
-
-```text
-PlatformId
-StationId
-TrackId
-Length
-Position
-```
-
-Długość peronu jest niezależna od długości pociągu.
-
-System może w przyszłości sprawdzać, czy długość pociągu umożliwia pełną obsługę przy danym peronie.
-
----
-
-# 14. Route
-
-`Route` reprezentuje kompletną trasę przejazdu wybraną przez użytkownika.
-
-Użytkownik wybiera całą trasę.
-
-Trasa może zawierać:
-
-```text
-Track
-Switch
-Section
 Station
-Platform
+├── Id
+├── Name
+├── Position
+├── Platforms
+└── StationTracks
 ```
 
-Przykładowa struktura:
+Stacja jest punktem infrastruktury oraz elementem planowania rozkładu jazdy.
+
+Pociąg zatrzymujący się na stacji wykonuje postój wynikający z rozkładu.
+
+---
+
+# 12. Platform
+
+`Platform` reprezentuje peron lub miejsce obsługi pasażerów.
+
+```text
+Platform
+├── Id
+├── StationId
+├── TrackId
+├── Length
+└── Capacity
+```
+
+Połączenie peronu z torem pozwala określić miejsce zatrzymania pociągu.
+
+Model powinien umożliwiać późniejszą obsługę różnych długości peronów.
+
+---
+
+# 13. Signal
+
+`Signal` reprezentuje semafor.
+
+Semafory mogą ograniczać możliwość wjazdu pociągu na określony odcinek.
+
+```text
+Signal
+├── Id
+├── Position
+├── Direction
+├── SignalType
+├── SectionId
+└── State
+```
+
+Stan semafora jest dynamiczny.
+
+Semafor może zostać wykorzystany przez interlocking do zabezpieczenia trasy.
+
+---
+
+# 14. Automatic sections
+
+Sekcje blokowe są wyznaczane automatycznie na podstawie infrastruktury i ustawionych semaforów.
+
+Użytkownik nie musi ręcznie definiować każdego odcinka sekcji.
+
+```text
+BlockSection
+├── Id
+├── Tracks
+├── EntrySignals
+├── ExitSignals
+└── Occupancy
+```
+
+`Occupancy` określa, czy sekcja jest zajęta.
+
+---
+
+# 15. Interlocking
+
+`Interlocking` odpowiada za bezpieczne ustawianie przebiegów.
+
+System interlockingu powinien kontrolować:
+
+* zajętość sekcji,
+* położenie rozjazdów,
+* konflikty przebiegów,
+* stan semaforów,
+* możliwość ustawienia trasy.
+
+Interlocking nie powinien samodzielnie wybierać całej trasy pociągu.
+
+Użytkownik wybiera całą trasę przejazdu.
+
+System następnie wykorzystuje interlocking do bezpiecznej realizacji wybranej trasy.
+
+---
+
+# 16. Route
+
+`Route` reprezentuje zaplanowaną trasę przejazdu.
+
+Trasa jest wybierana przez użytkownika.
 
 ```text
 Route
-  ↓
-Track
-  ↓
-Switch
-  ↓
-Track
-  ↓
-Station
-  ↓
-Track
-  ↓
-Switch
-  ↓
-Track
+├── Id
+├── Name
+├── Start
+├── Destination
+├── Waypoints
+├── TrackPath
+└── Direction
 ```
 
-Trasa jest logicznym przebiegiem przejazdu.
+`TrackPath` zawiera kolejność odcinków toru.
 
-Trasa nie jest tym samym co automatycznie ustawiany przebieg semaforowy.
+Trasa może zawierać rozjazdy.
 
-System może na podstawie trasy automatycznie wyznaczać wymagane przebiegi.
+Trasa może przebiegać przez wiele stacji.
 
 ---
 
-# 15. Service
+# 17. Train
 
-`Service` reprezentuje usługę kolejową.
+`Train` reprezentuje aktualny skład kolejowy.
 
-Usługa powinna istnieć przed przypisaniem do niej konkretnego taboru.
+Pociąg nie powinien przechowywać wszystkich informacji o pojazdach jako jednego obiektu fizycznego.
 
-Usługa posiada:
-
-```text
-ServiceId
-Name
-RouteId
-ScheduleId
-Priority
-AssignedTrainId
-```
-
-Priorytet jest obecnie podstawowym parametrem klasyfikacji ruchu.
-
-System powinien umożliwiać późniejsze rozszerzenie priorytetu o bardziej rozbudowany system klas pociągów.
-
----
-
-# 16. Schedule
-
-`Schedule` reprezentuje rozkład jazdy.
-
-Rozkład jest przypisany do usługi.
-
-Rozkład powinien zawierać listę punktów:
+Pociąg składa się z osobnych jednostek taboru.
 
 ```text
-ScheduleStop
-```
-
-Każdy punkt może określać:
-
-```text
-StationId
-PlatformId
-ArrivalTime
-DepartureTime
-MinimumStopTime
-```
-
-Rozkład może posiadać różne czasy postoju dla różnych stacji.
-
-Pociąg musi zatrzymać się na stacji zgodnie z wymaganiami rozkładu.
-
----
-
-# 17. ScheduleStop
-
-`ScheduleStop` reprezentuje pojedynczy postój pociągu.
-
-Podstawowe dane:
-
-```text
-StationId
-PlatformId
-ArrivalTime
-DepartureTime
-StopDuration
-```
-
-Wartość czasu postoju może wynikać z różnicy pomiędzy czasem przyjazdu i odjazdu.
-
-System powinien umożliwiać późniejsze dodanie:
-
-```text
-PassengerExchangeTime
-OperationalStop
-TechnicalStop
+Train
+├── Id
+├── Name
+├── Vehicles
+├── Route
+├── Service
+├── Timetable
+├── Priority
+└── State
 ```
 
 ---
 
-# 18. RollingStock
+# 18. Vehicle
 
-`RollingStock` reprezentuje pojedynczy pojazd kolejowy.
+`Vehicle` jest bazowym pojęciem dla pojedynczego pojazdu.
 
-`RollingStock` jest abstrakcją wspólną dla:
+Każdy wagon jest osobnym obiektem.
 
-```text
-Locomotive
-Carriage
-```
-
-Każdy pojazd posiada własny identyfikator.
-
-Podstawowe parametry:
+Każda lokomotywa jest osobnym obiektem.
 
 ```text
-RollingStockId
-Length
-Mass
-MaxSpeed
-Acceleration
-Braking
+Vehicle
+├── Id
+├── Type
+├── Length
+├── Mass
+├── MaximumSpeed
+├── Acceleration
+├── Braking
+└── Power
 ```
-
-Parametry powinny być dostępne w modelu nawet wtedy, gdy w wersji beta część wartości jest wspólna dla wielu pojazdów.
 
 ---
 
 # 19. Locomotive
 
-`Locomotive` jest specjalizacją `RollingStock`.
+`Locomotive` reprezentuje lokomotywę.
 
-Lokomotywa posiada dodatkowe dane:
-
-```text
-Power
-TractionType
-VoltageSystem
-```
-
-Obsługiwane rodzaje trakcji:
+Lokomotywa może być:
 
 ```text
 Electric
@@ -527,514 +404,716 @@ Diesel
 Hybrid
 ```
 
-System elektryczny powinien rozróżniać:
+Lokomotywa elektryczna posiada wymagany typ zasilania.
 
 ```text
-DC
-AC
+Locomotive
+├── PowerType
+├── ElectrificationCompatibility
+├── Power
+├── TractionForce
+├── MaximumSpeed
+├── Acceleration
+└── Braking
 ```
-
-Model powinien umożliwiać późniejsze dodanie konkretnych systemów zasilania.
 
 ---
 
-# 20. Carriage
+# 20. PassengerCar
 
-`Carriage` jest specjalizacją `RollingStock`.
-
-Wagon posiada:
+`PassengerCar` reprezentuje wagon pasażerski.
 
 ```text
-CarriageType
-PassengerCapacity
+PassengerCar
+├── Capacity
+├── Occupancy
+├── Length
+├── Mass
+└── PassengerType
 ```
 
-Model wagonu powinien być przygotowany na późniejsze dodanie wagonów towarowych.
+Pojemność wagonu określa maksymalną liczbę pasażerów.
+
+Obciążenie wagonu wpływa na masę całego składu.
 
 ---
 
-# 21. Train
+# 21. FreightCar
 
-`Train` reprezentuje fizyczny skład znajdujący się w symulacji.
+`FreightCar` reprezentuje wagon towarowy.
 
-Pociąg posiada:
+Wersja beta może zawierać jedynie podstawową implementację.
 
 ```text
-TrainId
-RollingStock
-CurrentRoute
-CurrentPosition
-CurrentSpeed
-CurrentDirection
-CurrentSection
-CurrentService
-State
+FreightCar
+├── Capacity
+├── CargoType
+├── CargoAmount
+├── Length
+└── Mass
 ```
 
-Pociąg składa się z pojedynczych obiektów `RollingStock`.
+System towarowy powinien istnieć w modelu już od początku, nawet jeżeli pełna mechanika zostanie dodana później.
 
-Przykład:
+---
+
+# 22. Train composition
+
+Kolejność pojazdów w pociągu jest istotna.
 
 ```text
 Train
-├── Locomotive
-├── Carriage
-├── Carriage
-├── Carriage
-└── Carriage
+    ↓
+Vehicle[0] — Locomotive
+Vehicle[1] — PassengerCar
+Vehicle[2] — PassengerCar
+Vehicle[3] — PassengerCar
 ```
 
----
-
-# 22. Train Length
-
-Długość pociągu jest obliczana dynamicznie.
-
-Wzór:
+Długość pociągu jest wyliczana:
 
 ```text
 TrainLength =
-    LocomotiveLength
-    + Sum(CarriageLength)
+    sum(Vehicle.Length)
 ```
 
-Każdy pojazd posiada własną długość.
+Masa pociągu jest wyliczana:
 
-Zmiana składu automatycznie zmienia długość pociągu.
-
----
-
-# 23. Train Movement
-
-Pojedynczy wagon nie może samodzielnie poruszać się jako pociąg.
-
-Ruch całego składu jest kontrolowany przez `Train`.
-
-Lokomotywa zapewnia siłę trakcyjną.
-
-Wagony są elementami składu ciągniętymi lub pchanymi przez lokomotywę.
-
-Model powinien jednak zachować każdy pojazd jako osobny obiekt.
+```text
+TrainMass =
+    sum(Vehicle.Mass)
+```
 
 ---
 
-# 24. Train Direction
+# 23. Coupling
 
-Pociąg może poruszać się w obu kierunkach.
+Pojazdy mogą być łączone.
 
-Kierunek powinien być określany względem geometrii trasy.
+Połączenie powinno być reprezentowane niezależnie od obiektu `Train`.
 
-Zmiana kierunku może nastąpić:
+```text
+Coupling
+├── VehicleA
+├── VehicleB
+└── State
+```
 
-* na stacji,
-* na końcu trasy,
-* podczas manewrów,
-* po wykonaniu odpowiedniej operacji użytkownika.
+Takie rozwiązanie pozwala obsłużyć rozdzielanie i łączenie składów.
 
 ---
 
-# 25. Train Splitting
+# 24. Splitting trains
 
-Skład może zostać rozdzielony.
-
-Operacja rozdzielenia tworzy dwa niezależne składy.
+Pociąg może zostać rozdzielony na dwa lub więcej składów.
 
 Przykład:
 
 ```text
 Train A
 
-[Loco][A][B][C][D]
+Lokomotywa
+Wagon 1
+Wagon 2
+Wagon 3
+Wagon 4
 ```
 
-po rozdzieleniu:
+Po rozdzieleniu:
 
 ```text
 Train A
-[Loco][A][B]
+Lokomotywa
+Wagon 1
+Wagon 2
 
 Train B
-[C][D]
+Wagon 3
+Wagon 4
 ```
 
-Pociąg bez lokomotywy nie może samodzielnie rozpocząć ruchu.
+Wagon bez lokomotywy nie może samodzielnie się poruszać.
 
 ---
 
-# 26. Train Joining
+# 25. Joining trains
 
 Dwa składy mogą zostać połączone.
 
-Operacja połączenia tworzy jeden skład złożony z pojazdów obu składów.
+System powinien zachować kolejność pojazdów.
 
 Przykład:
 
 ```text
 Train A
-[Loco][A][B]
+Lokomotywa + Wagony
+
++
 
 Train B
-[C][D]
+Lokomotywa + Wagony
 ```
 
-po połączeniu:
+Po połączeniu powstaje jeden skład.
+
+---
+
+# 26. Reversing
+
+Pociąg może zmieniać kierunek jazdy.
+
+Zmiana kierunku nie musi oznaczać zmiany kolejności fizycznej pojazdów.
+
+Kierunek jazdy jest stanem symulacji.
+
+---
+
+# 27. Shunting
+
+System powinien umożliwiać manewry.
+
+Lokomotywa może cofać skład na minimalną wymaganą odległość.
+
+Brak możliwości wykonania manewru cofania może wymagać objechania składu przez lokomotywę.
+
+Mechanika manewrowa powinna być uproszczona w pierwszej wersji, ale model danych powinien umożliwiać jej rozwój.
+
+---
+
+# 28. Train parameters
+
+Minimalny model fizyczny pociągu obejmuje:
 
 ```text
-Train A
-[Loco][A][B][C][D]
+MaximumSpeed
+Acceleration
+Braking
+Mass
+Length
 ```
 
-System powinien sprawdzić możliwość fizycznego wykonania operacji.
+Parametry mogą być indywidualne dla pojazdów.
+
+Parametry składu są wyliczane na podstawie jego pojazdów.
 
 ---
 
-# 27. Reversing
+# 29. TrainState
 
-Pociąg może zmienić kierunek.
-
-System powinien umożliwiać zmianę kierunku bez konieczności przebudowy obiektu `Train`.
-
-Jeżeli wymagane jest przestawienie lokomotywy na drugi koniec składu, system powinien traktować to jako operację manewrową.
-
-Pociąg może cofnąć się na ograniczoną odległość.
-
-Jeżeli cofnięcie nie jest możliwe, lokomotywa może wymagać objechania składu.
-
----
-
-# 28. Passenger
-
-`Passenger` reprezentuje pojedynczego pasażera.
-
-Model beta nie wymaga szczegółowej symulacji każdego pasażera.
-
-System może przechowywać pasażerów jako agregaty zapotrzebowania.
-
----
-
-# 29. PassengerDemand
-
-`PassengerDemand` reprezentuje zapotrzebowanie pomiędzy punktami sieci.
-
-Podstawowe dane:
+`TrainState` przechowuje dynamiczny stan pociągu.
 
 ```text
-OriginStationId
-DestinationStationId
-PassengerCount
-GenerationInterval
+TrainState
+├── Position
+├── Direction
+├── Speed
+├── Acceleration
+├── CurrentTrack
+├── TrackOffset
+├── CurrentRoutePosition
+├── CurrentSignal
+├── CurrentSection
+├── IsStopped
+├── IsDerailled
+└── Error
 ```
 
-W becie liczba pasażerów może być aktualizowana co:
+Stan ten zmienia się podczas symulacji.
+
+---
+
+# 30. Derailment
+
+Wykolejenie jest zdarzeniem symulacyjnym.
+
+```text
+IsDerailled = true
+```
+
+Po wykolejeniu pociąg zatrzymuje się.
+
+System zgłasza błąd.
+
+Szczegółowa mechanika skutków wykolejenia może zostać rozszerzona w przyszłości.
+
+---
+
+# 31. Service
+
+`Service` reprezentuje usługę kolejową.
+
+Usługa jest tworzona przed przypisaniem do niej konkretnego składu.
+
+```text
+Service
+├── Id
+├── Name
+├── Route
+├── Stops
+├── Priority
+├── TimetableTemplate
+└── AssignedTrain
+```
+
+Usługa opisuje zamiar wykonania określonego połączenia.
+
+---
+
+# 32. Service priority
+
+Usługa posiada tag priorytetu.
+
+Minimalny model:
+
+```text
+Priority
+```
+
+Szczegółowy system priorytetów może zostać rozszerzony w przyszłości.
+
+---
+
+# 33. Timetable
+
+`Timetable` reprezentuje rozkład jazdy przypisany do usługi.
+
+```text
+Timetable
+├── Id
+├── ServiceId
+├── Stops
+├── DepartureRules
+└── ArrivalRules
+```
+
+Rozkład może być oparty o wzorzec.
+
+---
+
+# 34. Timetable template
+
+System posiada wzór rozkładu, który można modyfikować.
+
+```text
+TimetableTemplate
+├── Id
+├── Name
+├── Stops
+├── DwellTimes
+└── TimingRules
+```
+
+Wzorzec może zostać wykorzystany do tworzenia wielu podobnych rozkładów.
+
+---
+
+# 35. Stop
+
+`Stop` reprezentuje postój pociągu.
+
+```text
+Stop
+├── StationId
+├── PlatformId
+├── ArrivalTime
+├── DepartureTime
+└── DwellTime
+```
+
+Pociąg musi wykonać wymagany postój na stacji.
+
+Czasy postoju są elementem rozkładu.
+
+---
+
+# 36. Route assignment
+
+Użytkownik wybiera całą trasę.
+
+Usługa otrzymuje wcześniej utworzoną trasę.
+
+Skład jest następnie przypisywany do usługi.
+
+```text
+Route
+    ↓
+Service
+    ↓
+Train
+    ↓
+Timetable
+```
+
+---
+
+# 37. Passenger system
+
+System pasażerski jest częścią modelu gry już w wersji beta.
+
+Pasażerowie są generowani i aktualizowani w interwałach czasowych.
+
+Początkowy interwał wynosi:
 
 ```text
 60 minut czasu symulacji
 ```
 
-Model powinien umożliwiać późniejsze dodanie:
+---
+
+# 38. PassengerDemand
+
+`PassengerDemand` opisuje zapotrzebowanie na przejazdy.
 
 ```text
-PassengerType
-TransferPreference
-DestinationWeight
-TimePreference
+PassengerDemand
+├── OriginStation
+├── DestinationStation
+├── PassengerCount
+└── GeneratedAt
 ```
+
+Zapotrzebowanie może być generowane proceduralnie.
 
 ---
 
-# 30. Cargo
+# 39. PassengerFlow
 
-Model beta nie wymaga aktywnego systemu towarowego.
+`PassengerFlow` reprezentuje przemieszczanie się pasażerów pomiędzy stacjami.
 
-Model danych powinien jednak pozostawić możliwość dodania:
+System powinien umożliwiać późniejsze dodanie bardziej zaawansowanych modeli wyboru trasy.
+
+---
+
+# 40. Cargo
+
+System towarowy nie jest podstawowym elementem wersji beta.
+
+Model danych powinien jednak od początku obsługiwać:
 
 ```text
-Cargo
 CargoType
 CargoAmount
-CargoDemand
-CargoStation
+CargoCapacity
+Origin
+Destination
 ```
 
-System towarowy powinien korzystać z tej samej podstawowej infrastruktury pociągów.
+Pełna mechanika przewozów towarowych może zostać dodana później bez przebudowy podstawowego modelu taboru.
 
 ---
 
-# 31. Train State
+# 41. Simulation
 
-Pociąg powinien posiadać stan operacyjny.
-
-Przykładowe stany:
+`SimulationState` reprezentuje stan działania symulacji.
 
 ```text
-Stopped
-Accelerating
-Running
+SimulationState
+├── CurrentTime
+├── Tick
+├── SpeedMultiplier
+├── IsRunning
+├── Trains
+├── Signals
+├── Junctions
+└── Events
+```
+
+---
+
+# 42. Simulation time
+
+Symulacja działa w stałym kroku:
+
+```text
+20 ms
+```
+
+Jeden rzeczywisty tick odpowiada:
+
+```text
+1 sekunda czasu rzeczywistego = 1 minuta czasu symulacji
+```
+
+Oznacza to przyspieszenie symulacji:
+
+```text
+60×
+```
+
+---
+
+# 43. Simulation tick
+
+Podczas każdego ticka system aktualizuje między innymi:
+
+```text
+Train movement
+Train speed
 Braking
-Waiting
-Arrived
-Departing
-Reversing
-Shunting
-Coupling
-Decoupling
-Error
-Derailed
+Signals
+Junctions
+Interlocking
+Station stops
+Passenger state
+Schedule state
+Events
 ```
 
-Lista stanów może zostać rozszerzona podczas implementacji.
+Stały tick pozwala na deterministyczniejsze działanie symulacji.
 
 ---
 
-# 32. Train Failure
+# 44. Event model
 
-Pociąg może wykoleić się w wyniku błędnego działania infrastruktury lub ruchu.
+System powinien wykorzystywać zdarzenia dla istotnych zmian stanu.
 
-Po wykolejeniu:
+Przykładowe zdarzenia:
 
 ```text
-Train.State = Derailed
+TrainArrivedAtStation
+TrainDepartedStation
+TrainStopped
+TrainStarted
+TrainJoined
+TrainSplit
+SignalChanged
+JunctionChanged
+RouteSet
+TrainDerailled
+ScheduleViolation
 ```
 
-Pociąg przestaje kontynuować normalną jazdę.
-
-System powinien zgłosić błąd użytkownikowi.
-
-Szczegółowy model uszkodzeń może zostać dodany w przyszłości.
+Model zdarzeń powinien być rozszerzalny.
 
 ---
 
-# 33. Relationships
+# 45. Errors
 
-Najważniejsze relacje modelu:
+Błędy symulacji powinny być reprezentowane jako dane.
 
 ```text
+SimulationError
+├── Id
+├── Type
+├── TrainId
+├── Time
+├── Description
+└── Severity
+```
+
+Błąd nie powinien automatycznie kończyć całej symulacji.
+
+Pociąg, którego dotyczy błąd, może zostać zatrzymany zależnie od typu błędu.
+
+---
+
+# 46. Save model
+
+Stan gry powinien być możliwy do serializacji.
+
+Minimalny zapis powinien obejmować:
+
+```text
+Game
 Map
- ├── RailwayInfrastructure
- │    ├── Track
- │    ├── Switch
- │    ├── Signal
- │    └── BlockSection
- │
- └── Station
-      └── Platform
-
-Service
- ├── Route
- ├── Schedule
- └── Train
-
-Train
- └── RollingStock
-      ├── Locomotive
-      └── Carriage
-
-Station
- └── PassengerDemand
+Infrastructure
+RollingStock
+Trains
+Routes
+Services
+Timetables
+PassengerState
+SimulationState
 ```
+
+Dane tymczasowe, które można bezpiecznie odtworzyć, nie muszą być przechowywane w identycznej postaci.
 
 ---
 
-# 34. Ownership
+# 47. IDs
 
-Obiekt nadrzędny powinien odpowiadać za istnienie logicznie należących do niego elementów.
+Każdy trwały obiekt powinien posiadać unikalny identyfikator.
 
-Przykładowo:
+Identyfikator powinien być niezależny od nazwy obiektu.
+
+Zmiana nazwy stacji nie może zmienić jej `Id`.
+
+---
+
+# 48. Names
+
+Nazwy są elementem prezentacyjnym i identyfikacyjnym dla użytkownika.
+
+Przykładowe nazwy:
 
 ```text
-Map
- └── Infrastructure
-
-Station
- └── Platforms
-
-Train
- └── RollingStock
-
-Service
- ├── Route
- └── Schedule
+Warszawa Centralna
+407 Chopin
+Linia IC 101
+Tor 1
+Semafor S12
 ```
 
-Nie oznacza to koniecznie fizycznego zagnieżdżenia obiektów w kodzie.
-
-Relacje mogą być realizowane poprzez identyfikatory.
+Nazwy nie powinny być używane jako klucze relacji pomiędzy obiektami.
 
 ---
 
-# 35. References
+# 49. References
 
-Obiekty powinny używać identyfikatorów do odwoływania się do innych obiektów świata.
+Relacje pomiędzy obiektami powinny być oparte na identyfikatorach.
 
 Przykład:
 
 ```text
-Train.CurrentServiceId
-Train.CurrentRouteId
-Train.CurrentSectionId
+Service.RouteId
+Service.AssignedTrainId
+Stop.StationId
+Stop.PlatformId
+Train.ServiceId
+Train.RouteId
+Vehicle.TrainId
 ```
 
-Takie podejście ogranicza sprzężenie pomiędzy modelami.
+Takie rozwiązanie ułatwia serializację oraz późniejsze zarządzanie dużą liczbą obiektów.
 
 ---
 
-# 36. Runtime State
+# 50. Calculated values
 
-Stan symulacji nie powinien być utożsamiany ze statyczną definicją obiektu.
+Niektóre wartości powinny być wyliczane zamiast przechowywane jako niezależne dane.
 
-Przykład:
-
-```text
-TrainDefinition
-```
-
-opisuje parametry pojazdu.
-
-Natomiast:
+Przykłady:
 
 ```text
-TrainState
+TrainLength
+TrainMass
+TrainMaximumSpeed
+PassengerOccupancy
+RouteLength
 ```
 
-opisuje jego aktualny stan w symulacji.
-
-Podział powinien umożliwiać wielokrotne wykorzystanie tej samej definicji taboru.
+Wyliczane wartości nie powinny powodować niespójności pomiędzy obiektami.
 
 ---
 
-# 37. Definitions vs Instances
+# 51. Extensibility
 
-System powinien rozróżniać definicje i instancje.
+Model danych powinien umożliwiać przyszłe dodanie:
 
-Przykład:
+* nowych typów lokomotyw,
+* nowych typów wagonów,
+* wagonów towarowych,
+* różnych typów ładunków,
+* bardziej szczegółowej elektryfikacji,
+* bardziej zaawansowanych parametrów fizycznych,
+* bardziej zaawansowanego systemu pasażerskiego,
+* różnych typów sygnalizacji,
+* bardziej szczegółowych rozjazdów,
+* większej liczby typów usług,
+* bardziej zaawansowanych priorytetów,
+* zdarzeń i statystyk eksploatacyjnych.
 
-```text
-LocomotiveDefinition
-        ↓
-Locomotive
-```
-
-oraz:
-
-```text
-CarriageDefinition
-        ↓
-Carriage
-```
-
-Definicja opisuje typ pojazdu.
-
-Instancja reprezentuje konkretny pojazd znajdujący się w świecie gry.
+Rozszerzenia nie powinny wymagać zmiany podstawowego modelu `Train`, `Vehicle`, `Track`, `Route` i `Service`.
 
 ---
 
-# 38. Serialization
+# 52. Beta scope
 
-Model danych powinien być możliwy do zapisania i odtworzenia.
-
-Docelowo zapis gry powinien obejmować:
+Wersja beta powinna zawierać co najmniej:
 
 ```text
 Map
 Terrain
-Infrastructure
-Stations
-Routes
-Services
-Schedules
-RollingStock
-Trains
-PassengerDemand
-SimulationTime
-```
-
-Stan chwilowy symulacji powinien być możliwy do odtworzenia z zapisu.
-
----
-
-# 39. Versioning
-
-Format danych zapisu powinien posiadać wersję.
-
-Przykład:
-
-```text
-SaveVersion = 1
-```
-
-Zmiany modelu danych nie powinny powodować bezwarunkowej utraty istniejących zapisów.
-
-System migracji zapisów może zostać dodany wraz z rozwojem projektu.
-
----
-
-# 40. Extensibility
-
-Model powinien być projektowany z myślą o przyszłej rozbudowie.
-
-Planowane rozszerzenia:
-
-```text
-Cargo
-FreightTrains
-AdvancedPassengerSimulation
-MultipleTractionSystems
-DetailedRollingStock
-Maintenance
-Failures
-AdvancedSignalling
-AdvancedDispatching
-```
-
-Rozszerzenia nie powinny wymagać przebudowania podstawowych relacji:
-
-```text
-Map
 Track
+Junction
+Station
+Platform
+Signal
+BlockSection
+Interlocking
+
+Locomotive
+PassengerCar
+Train
+Coupling
+
 Route
 Service
-Train
-RollingStock
-Station
-Schedule
+Timetable
+Stop
+Priority
+
+PassengerDemand
+PassengerFlow
+
+SimulationState
+TrainState
+SimulationError
+```
+
+Model towarowy powinien istnieć częściowo, ale pełna mechanika przewozu towarów nie jest wymagana w pierwszej becie.
+
+---
+
+# 53. Core relationship diagram
+
+```text
+                         ┌──────────────┐
+                         │     Map      │
+                         └──────┬───────┘
+                                │
+                ┌───────────────┼────────────────┐
+                │               │                │
+                ▼               ▼                ▼
+             Track          Station          Signal
+                │               │                │
+                ▼               ▼                ▼
+            Junction         Platform       BlockSection
+                │                                │
+                └──────────────┬─────────────────┘
+                               ▼
+                         Interlocking
+                               │
+                               ▼
+                            Route
+                               │
+                               ▼
+                           Service
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+               Timetable                Train
+                                          │
+                                          ▼
+                                       Vehicle
+                                          │
+                         ┌────────────────┼────────────────┐
+                         ▼                ▼                ▼
+                    Locomotive      PassengerCar      FreightCar
 ```
 
 ---
 
-# 41. Beta Scope
+# 54. Fundamental rule
 
-Wersja beta powinna implementować przede wszystkim:
+Najważniejszą zasadą modelu jest rozdzielenie:
 
-* mapę,
-* teren,
-* tory,
-* rozjazdy,
-* sekcje,
-* semafory,
-* interlocking,
-* stacje,
-* perony,
-* trasy,
-* usługi,
-* rozkłady,
-* lokomotywy,
-* wagony,
-* pociągi,
-* łączenie składów,
-* rozdzielanie składów,
-* ruch pociągów,
-* podstawowe parametry fizyczne,
-* pasażerów,
-* podstawowe zapotrzebowanie pasażerskie.
+```text
+Infrastructure
+    ≠
+Rolling Stock
+    ≠
+Operations
+    ≠
+Simulation State
+```
 
-System towarowy powinien być przygotowany architektonicznie, ale nie musi być aktywny w pierwszej becie.
+Infrastruktura opisuje świat.
 
----
+Tabor opisuje dostępne pojazdy.
 
-# 42. Zasada nadrzędna
+Operacje opisują sposób wykorzystania infrastruktury i taboru.
 
-Model danych powinien odzwierciedlać rzeczywisty świat kolejowy w takim stopniu, w jakim jest to potrzebne do działania symulatora.
+Symulacja opisuje aktualny stan świata.
 
-Model nie powinien komplikować implementacji bez wyraźnej wartości dla symulacji.
-
-Każda abstrakcja powinna mieć uzasadnienie w mechanice gry, symulacji lub przyszłej rozbudowie projektu.
+Takie rozdzielenie stanowi podstawę dalszego rozwoju RailDispatch.
