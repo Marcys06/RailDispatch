@@ -6,22 +6,35 @@ public sealed class TrackCell
 {
     public MapPosition Position { get; }
 
-    public TrackType Type { get; }
+    public TrackGeometry Geometry { get; private set; }
 
     public TrackConnections Connections { get; private set; }
 
     public TrackCell(
         MapPosition position,
-        TrackType type,
+        TrackGeometry geometry,
         TrackConnections connections)
     {
         Position = position;
-        Type = type;
+        Geometry = geometry;
         Connections = connections;
     }
 
-    public void SetConnections(TrackConnections connections)
+    public void SetGeometry(
+        TrackGeometry geometry)
+    {
+        Geometry = geometry;
+    }
+
+    public void SetConnections(
+        TrackConnections connections)
     {
         Connections = connections;
+    }
+
+    public bool HasConnection(
+        TrackConnections connection)
+    {
+        return Connections.HasFlag(connection);
     }
 }

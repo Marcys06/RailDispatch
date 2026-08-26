@@ -9,7 +9,8 @@ public sealed class GameMap
 
     public MapSize Size { get; }
 
-    public IReadOnlyDictionary<MapPosition, TrackCell> Tracks => _tracks;
+    public IReadOnlyDictionary<MapPosition, TrackCell> Tracks =>
+        _tracks;
 
     public GameMap(int width, int height)
         : this(new MapSize(width, height))
@@ -24,7 +25,8 @@ public sealed class GameMap
             checked(size.Width * size.Height)];
     }
 
-    public TerrainType GetTerrain(MapPosition position)
+    public TerrainType GetTerrain(
+        MapPosition position)
     {
         ValidatePosition(position);
 
@@ -40,7 +42,8 @@ public sealed class GameMap
         _terrain[GetIndex(position)] = terrain;
     }
 
-    public bool HasTrack(MapPosition position)
+    public bool HasTrack(
+        MapPosition position)
     {
         return _tracks.ContainsKey(position);
     }
@@ -49,28 +52,35 @@ public sealed class GameMap
         MapPosition position,
         out TrackCell? track)
     {
-        return _tracks.TryGetValue(position, out track);
+        return _tracks.TryGetValue(
+            position,
+            out track);
     }
 
-    public void AddTrack(TrackCell track)
+    public void AddTrack(
+        TrackCell track)
     {
         ValidatePosition(track.Position);
 
         _tracks[track.Position] = track;
     }
 
-    public bool RemoveTrack(MapPosition position)
+    public bool RemoveTrack(
+        MapPosition position)
     {
         return _tracks.Remove(position);
     }
 
-    private int GetIndex(MapPosition position)
+    private int GetIndex(
+        MapPosition position)
     {
         return checked(
-            position.Y * Size.Width + position.X);
+            position.Y * Size.Width +
+            position.X);
     }
 
-    private void ValidatePosition(MapPosition position)
+    private void ValidatePosition(
+        MapPosition position)
     {
         if (position.X < 0 ||
             position.X >= Size.Width ||
