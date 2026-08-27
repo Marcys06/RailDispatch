@@ -87,16 +87,15 @@ public sealed class TrackBuilder
     }
 
     private void ConnectNeighbours(
-        MapPosition position,
-        TrackConnections connections)
+    MapPosition position,
+    TrackConnections connections)
     {
         if (connections.HasFlag(TrackConnections.North))
         {
             ConnectNeighbour(
                 position.X,
                 position.Y - 1,
-                TrackConnections.South,
-                TrackConnections.North);
+                TrackConnections.South);
         }
 
         if (connections.HasFlag(TrackConnections.East))
@@ -104,8 +103,7 @@ public sealed class TrackBuilder
             ConnectNeighbour(
                 position.X + 1,
                 position.Y,
-                TrackConnections.West,
-                TrackConnections.East);
+                TrackConnections.West);
         }
 
         if (connections.HasFlag(TrackConnections.South))
@@ -113,8 +111,7 @@ public sealed class TrackBuilder
             ConnectNeighbour(
                 position.X,
                 position.Y + 1,
-                TrackConnections.North,
-                TrackConnections.South);
+                TrackConnections.North);
         }
 
         if (connections.HasFlag(TrackConnections.West))
@@ -122,15 +119,13 @@ public sealed class TrackBuilder
             ConnectNeighbour(
                 position.X - 1,
                 position.Y,
-                TrackConnections.East,
-                TrackConnections.West);
+                TrackConnections.East);
         }
     }
 
     private void ConnectNeighbour(
         int x,
         int y,
-        TrackConnections requiredConnection,
         TrackConnections connectionToAdd)
     {
         var neighbourPosition =
@@ -140,12 +135,6 @@ public sealed class TrackBuilder
                 neighbourPosition,
                 out var neighbour) ||
             neighbour is null)
-        {
-            return;
-        }
-
-        if (!neighbour.HasConnection(
-                requiredConnection))
         {
             return;
         }
