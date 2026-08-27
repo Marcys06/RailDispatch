@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\RailDispatch.Domain\RailDispatch.Domain.csproj" />
     <ProjectReference Include="..\..\src\RailDispatch.Simulation\RailDispatch.Simulation.csproj" />
+    <ProjectReference Include="..\..\src\RailDispatch.Building\RailDispatch.Building.csproj" />
   </ItemGroup>
 
 </Project>

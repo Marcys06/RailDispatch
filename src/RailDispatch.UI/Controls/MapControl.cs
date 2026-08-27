@@ -1,6 +1,6 @@
 ﻿using RailDispatch.Domain.Map;
 using RailDispatch.Domain.Railway;
-using RailDispatch.UI.Building;
+using RailDispatch.Building;
 using RailDispatch.UI.Map;
 
 namespace RailDispatch.UI.Controls;

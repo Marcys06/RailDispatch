@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RailDispatch.Domain\RailDispatch.Domain.csproj" />
+    <ProjectReference Include="..\RailDispatch.Building\RailDispatch.Building.csproj" />
   </ItemGroup>
 
 </Project>

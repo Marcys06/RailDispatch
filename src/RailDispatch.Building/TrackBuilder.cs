@@ -1,7 +1,7 @@
-﻿using RailDispatch.Domain.Map;
+using RailDispatch.Domain.Map;
 using RailDispatch.Domain.Railway;
 
-namespace RailDispatch.UI.Building;
+namespace RailDispatch.Building;
 
 public sealed class TrackBuilder
 {
